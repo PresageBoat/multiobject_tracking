@@ -8,18 +8,16 @@ SortTracking::~SortTracking() {
 
 }
 
-int SortTracking::InitSortTracker() {
-	return 0;
-}
+int SortTracking::RunSortTracker(const vector<TrackingBox> &detectresult, vector<TrackingBox>& trackresult) {
 
-int SortTracking::RunSortTracker(const vector<TrackingBox>detectresult, vector<TrackingBox>& trackresult) {
+	//vector<int> cls_id_vec;
 
 	//当跟踪器为空时，用检测结果进行初始化
 	if (trackers.size() == 0)
 	{
 		for (unsigned int i = 0; i < detectresult.size(); i++)
 		{
-			KalmanTracker trk = KalmanTracker(detectresult[i].box);
+			KalmanTracker trk = KalmanTracker(detectresult[i].box,detectresult[i].cls_id);
 			trackers.emplace_back(trk);
 		}
 	}
@@ -109,8 +107,8 @@ int SortTracking::RunSortTracker(const vector<TrackingBox>detectresult, vector<T
 			matchedPairs.push_back(cv::Point(i, assignment[i]));
 	}
 
-	//updating trackers
-	// update matched trackers with assigned detections.
+//updating trackers
+// update matched trackers with assigned detections.
 // each prediction is corresponding to a tracker
 	int detIdx, trkIdx;
 	for (unsigned int i = 0; i < matchedPairs.size(); i++)
@@ -123,7 +121,7 @@ int SortTracking::RunSortTracker(const vector<TrackingBox>detectresult, vector<T
 	// create and initialise new trackers for unmatched detections
 	for (auto umd : unmatchedDetections)
 	{
-		KalmanTracker tracker = KalmanTracker(detectresult[umd].box);
+		KalmanTracker tracker = KalmanTracker(detectresult[umd].box,detectresult[umd].cls_id);
 		trackers.push_back(tracker);
 	}
 
@@ -134,9 +132,9 @@ int SortTracking::RunSortTracker(const vector<TrackingBox>detectresult, vector<T
 			((*it).m_hit_streak >= min_hits || frame_count <= min_hits))
 		{
 			TrackingBox res;
-			Point centerpoint;
 			res.box = (*it).get_state();
-			res.track_id = (*it).m_id + 1;
+			res.track_id = ((*it).m_id + 1)%MAXTRACKINGID;
+			res.cls_id = (*it).cls_idx;
 			trackresult.push_back(res);
 			it++;
 		}

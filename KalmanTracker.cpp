@@ -1,5 +1,6 @@
 #include "KalmanTracker.h"
-
+#include <stdio.h>
+#include <iostream>
 
 int KalmanTracker::kf_count = 0;
 
@@ -21,22 +22,14 @@ void KalmanTracker::init_kf(StateType stateMat)
 		0, 0, 0, 0, 1, 0, 0,
 		0, 0, 0, 0, 0, 1, 0,
 		0, 0, 0, 0, 0, 0, 1);
-	//kf.transitionMatrix = (Mat_<float>(stateNum, stateNum) <<
-	//	1, 0, 0, 0, 1, 0, 0, 0,
-	//	0, 1, 0, 0, 0, 1, 0, 0,
-	//	0, 0, 1, 0, 0, 0, 1, 0,
-	//	0, 0, 0, 1, 0, 0, 0, 1,
-	//	0, 0, 0, 0, 1, 0, 0, 0,
-	//	0, 0, 0, 0, 0, 1, 0, 0,
-	//	0, 0, 0, 0, 0, 0, 1, 0,
-	//	0, 0, 0, 0, 0, 0, 0, 1);
+
 
 
 	setIdentity(kf.measurementMatrix);
 	setIdentity(kf.processNoiseCov, Scalar::all(1e-2));
 	setIdentity(kf.measurementNoiseCov, Scalar::all(1e-1));
 	setIdentity(kf.errorCovPost, Scalar::all(1));
-	
+
 	// initialize state vector with bounding box in [cx,cy,s,r] style
 	kf.statePost.at<float>(0, 0) = stateMat.x + stateMat.width / 2;
 	kf.statePost.at<float>(1, 0) = stateMat.y + stateMat.height / 2;
@@ -50,6 +43,7 @@ StateType KalmanTracker::predict()
 {
 	// predict
 	Mat p = kf.predict();
+
 	m_age += 1;
 
 	if (m_time_since_update > 0)
@@ -93,8 +87,13 @@ StateType KalmanTracker::get_state()
 // Convert bounding box from [cx,cy,s,r] to [x,y,w,h] style.
 StateType KalmanTracker::get_rect_xysr(float cx, float cy, float s, float r)
 {
-	float w = sqrt(s * r);
-	float h = s / w;
+	float w = 0.f;
+	float h = 0.f;
+	if (s > 0.f)
+	{
+		w = sqrt(s * r);
+		h = s / w;
+	}
 	float x = (cx - w / 2);
 	float y = (cy - h / 2);
 
